@@ -6,6 +6,8 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 
+#include "UnrealMono.h"
+
 // Sets default values
 ASCharacter::ASCharacter()
 {
@@ -28,7 +30,13 @@ ASCharacter::ASCharacter()
 void ASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	bool res = FUnrealMonoModule::MonoJitInit();
+	if (GEngine)
+		if (!res)
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("mono_jit_init failed"));
+		else
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, TEXT("mono_jit_init succeeded"));
 }
 
 void ASCharacter::MoveForward(float Value)

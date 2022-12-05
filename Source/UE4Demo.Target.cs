@@ -9,6 +9,10 @@ public class UE4DemoTarget : TargetRules
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange( new string[] { "UE4Demo" } );
+		ExtraModuleNames.AddRange(new string[]
+		{ 
+			"UE4Demo", 
+			"UnrealMono", 
+		});
 	}
 }
