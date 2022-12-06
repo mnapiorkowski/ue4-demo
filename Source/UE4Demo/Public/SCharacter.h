@@ -48,6 +48,10 @@ protected:
 
 	void PrimaryAttack_TimeElapsed();
 
+	bool IsModApplied;
+
+	void ApplyMod();
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

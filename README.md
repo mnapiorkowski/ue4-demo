@@ -11,3 +11,10 @@ Check details [here](https://github.com/mono/mono/blob/main/LICENSE).
 
 ## Prerequisites
 Current version works only on Windows. You need to have Mono x64 installed and copy 'lib' directory to Plugins/UnrealMono/Source/ThirdParty/MonoRuntime/ (in fact, just 'lib/mono-2.0-sgen.lib' should be enough).
+
+## Test
+From the root directory of your game run:
+```
+mcs Test/UnrealMonoTest.cs -target:library -out:Binaries/Win64/test.dll
+```
+This DLL will be loaded into Mono Runtime after you push Enter while playing the game. Then player character's jump height will be multiplied by the factor returned from the compiled function.

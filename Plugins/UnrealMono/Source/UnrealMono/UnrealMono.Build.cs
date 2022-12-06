@@ -18,13 +18,11 @@ public class UnrealMono : ModuleRules
 		{
 			"Core",
 			"Projects",
+			"MonoRuntime",
 		});
 			
 		
-		PrivateDependencyModuleNames.AddRange(new string[] 
-		{
-			"MonoRuntime",
-		});
+		PrivateDependencyModuleNames.AddRange(new string[] { });
 		
 		DynamicallyLoadedModuleNames.AddRange(new string[] { });
 	}
