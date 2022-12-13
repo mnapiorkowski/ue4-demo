@@ -1,5 +1,5 @@
 /*
- *  Unreal Engine .NET 5 integration
+ *  Unreal Engine .NET 6 integration
  *  Copyright (c) 2021 Stanislav Denisov
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,19 +28,19 @@
 DEFINE_LOG_CATEGORY(LogUnrealCLR);
 
 void UnrealCLR::Module::StartupModule() {
-	#define HOSTFXR_VERSION "5.0.9"
-	#define HOSTFXR_WINDOWS "/hostfxr.dll"
-	#define HOSTFXR_MAC "/libhostfxr.dylib"
-	#define HOSTFXR_LINUX "/libhostfxr.so"
+	#define HOSTFXR_VERSION "6.0.1"
+	#define HOSTFXR_WINDOWS "hostfxr.dll"
+	#define HOSTFXR_MAC "libhostfxr.dylib"
+	#define HOSTFXR_LINUX "libhostfxr.so"
 
 	#ifdef UNREALCLR_WINDOWS
-		#define HOSTFXR_PATH "Plugins/UnrealCLR/Runtime/Win64/host/fxr/" HOSTFXR_VERSION HOSTFXR_WINDOWS
+		#define HOSTFXR_PATH "Plugins/UnrealCLR/Runtime/Win64/host/fxr/" HOSTFXR_VERSION "/" HOSTFXR_WINDOWS
 		#define UNREALCLR_PLATFORM_STRING(string) string
 	#elif defined(UNREALCLR_MAC)
-		#define HOSTFXR_PATH "Plugins/UnrealCLR/Runtime/Mac/host/fxr/" HOSTFXR_VERSION HOSTFXR_MAC
+		#define HOSTFXR_PATH "Plugins/UnrealCLR/Runtime/Mac/host/fxr/" HOSTFXR_VERSION "/" HOSTFXR_MAC
 		#define UNREALCLR_PLATFORM_STRING(string) TCHAR_TO_ANSI(string)
 	#elif defined(UNREALCLR_UNIX)
-		#define HOSTFXR_PATH "Plugins/UnrealCLR/Runtime/Linux/host/fxr/" HOSTFXR_VERSION HOSTFXR_LINUX
+		#define HOSTFXR_PATH "Plugins/UnrealCLR/Runtime/Linux/host/fxr/" HOSTFXR_VERSION "/" HOSTFXR_LINUX
 		#define UNREALCLR_PLATFORM_STRING(string) TCHAR_TO_ANSI(string)
 	#else
 		#error "Unknown platform"
@@ -99,7 +99,7 @@ void UnrealCLR::Module::StartupModule() {
 			return;
 		}
 
-		HostfxrSetErrorWriter(HostError);
+		HostfxrSetErrorWriter(&HostError);
 
 		hostfxr_handle HostfxrContext = nullptr;
 
@@ -128,7 +128,7 @@ void UnrealCLR::Module::StartupModule() {
 		load_assembly_and_get_function_pointer_fn HostfxrLoadAssemblyAndGetFunctionPointer = (load_assembly_and_get_function_pointer_fn)hostfxrLoadAssemblyAndGetFunctionPointer;
 
 		if (HostfxrLoadAssemblyAndGetFunctionPointer && HostfxrLoadAssemblyAndGetFunctionPointer(UNREALCLR_PLATFORM_STRING(*runtimeAssemblyPath), UNREALCLR_PLATFORM_STRING(*runtimeTypeName), UNREALCLR_PLATFORM_STRING(*runtimeMethodName), UNMANAGEDCALLERSONLY_METHOD, nullptr, (void**)&UnrealCLR::ManagedCommand) == 0) {
-			UE_LOG(LogUnrealCLR, Display, TEXT("%s: Host runtime assembly loaded succesfuly!"), ANSI_TO_TCHAR(__FUNCTION__));
+			UE_LOG(LogUnrealCLR, Display, TEXT("%s: Host runtime assembly loaded successfuly!"), ANSI_TO_TCHAR(__FUNCTION__));
 		} else {
 			UE_LOG(LogUnrealCLR, Error, TEXT("%s: Host runtime assembly loading failed!"), ANSI_TO_TCHAR(__FUNCTION__));
 
@@ -1345,34 +1345,27 @@ void UnrealCLR::Module::StartupModule() {
 			};
 
 			if (reinterpret_cast<intptr_t>(UnrealCLR::ManagedCommand(UnrealCLR::Command(functions, checksum))) == 0xF) {
-				UE_LOG(LogUnrealCLR, Display, TEXT("%s: Host runtime assembly initialized succesfuly!"), ANSI_TO_TCHAR(__FUNCTION__));
+				UE_LOG(LogUnrealCLR, Display, TEXT("%s: Host runtime assembly initialized successfuly!"), ANSI_TO_TCHAR(__FUNCTION__));
 			} else {
 				UE_LOG(LogUnrealCLR, Error, TEXT("%s: Host runtime assembly initialization failed!"), ANSI_TO_TCHAR(__FUNCTION__));
 
 				return;
 			}
 
-			UnrealCLR::Engine::Manager = NewObject<UUnrealCLRManager>();
-			UnrealCLR::Engine::Manager->AddToRoot();
 			UnrealCLR::Status = UnrealCLR::StatusType::Idle;
 
-			UE_LOG(LogUnrealCLR, Display, TEXT("%s: Host loaded succesfuly!"), ANSI_TO_TCHAR(__FUNCTION__));
+			UE_LOG(LogUnrealCLR, Display, TEXT("%s: Host loaded successfuly!"), ANSI_TO_TCHAR(__FUNCTION__));
 		} else {
 			UE_LOG(LogUnrealCLR, Error, TEXT("%s: Host runtime assembly unable to load the initialization function!"), ANSI_TO_TCHAR(__FUNCTION__));
 
 			return;
 		}
 	} else {
-		UE_LOG(LogUnrealCLR, Error, TEXT("%s: Host loading failed!"), ANSI_TO_TCHAR(__FUNCTION__));
+		UE_LOG(LogUnrealCLR, Error, TEXT("%s: Host library loading failed!"), ANSI_TO_TCHAR(__FUNCTION__));
 	}
 }
 
 void UnrealCLR::Module::ShutdownModule() {
-	if (UnrealCLR::Engine::Manager) {
-		UnrealCLR::Engine::Manager->RemoveFromRoot();
-		UnrealCLR::Engine::Manager = nullptr;
-	}
-
 	FWorldDelegates::OnPostWorldInitialization.Remove(OnWorldPostInitializationHandle);
 	FWorldDelegates::OnWorldCleanup.Remove(OnWorldCleanupHandle);
 
@@ -1382,6 +1375,8 @@ void UnrealCLR::Module::ShutdownModule() {
 void UnrealCLR::Module::OnWorldPostInitialization(UWorld* World, const UWorld::InitializationValues InitializationValues) {
 	if (World->IsGameWorld()) {
 		if (UnrealCLR::WorldTickState == TickState::Stopped) {
+			UnrealCLR::Engine::Manager = NewObject<UUnrealCLRManager>();
+			UnrealCLR::Engine::Manager->AddToRoot();
 			UnrealCLR::Engine::World = World;
 
 			if (UnrealCLR::Status != UnrealCLR::StatusType::Stopped) {
@@ -1430,6 +1425,8 @@ void UnrealCLR::Module::OnWorldCleanup(UWorld* World, bool SessionEnded, bool Cl
 		}
 
 		UnrealCLR::Engine::World = nullptr;
+		UnrealCLR::Engine::Manager->RemoveFromRoot();
+		UnrealCLR::Engine::Manager = nullptr;
 		UnrealCLR::WorldTickState = UnrealCLR::TickState::Stopped;
 
 		FMemory::Memset(UnrealCLR::Shared::Events, 0, sizeof(UnrealCLR::Shared::Events));
