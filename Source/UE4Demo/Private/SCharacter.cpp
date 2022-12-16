@@ -70,55 +70,21 @@ void ASCharacter::PrimaryAttack_TimeElapsed()
 	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
 }
 
-void PrintDebugMessage(void* Ptr, FString FuncName)
-{
-	if (GEngine)
-	{
-		if (Ptr)
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FuncName + TEXT(" succeeded"));
-		else
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FuncName + TEXT(" failed"));
-	}
-}
-
-int RetrieveFromDll()
-{
-	FUnrealMonoModule* UnrealMono = FModuleManager::GetModulePtr<FUnrealMonoModule>("UnrealMono");
-
-	FString DllName = TEXT("test.dll");
-	MonoDomain* Domain = UnrealMono->MonoJitInit(DllName);
-	PrintDebugMessage(Domain, "mono_jit_init");
-
-	FString DllPath = FPaths::ProjectDir() + TEXT("Binaries/Win64/") + DllName;
-	MonoAssembly* Assembly = UnrealMono->MonoDomainAssemblyOpen(Domain, DllPath);
-	PrintDebugMessage(Assembly, "mono_domain_assembly_open");
-
-	MonoImage* Image = UnrealMono->MonoAssemblyGetImage(Assembly);
-	PrintDebugMessage(Image, "mono_assembly_get_image");
-
-	FString MethodDescStr = TEXT("UnrealMonoTest::JumpHeightFactor()");
-	MonoMethodDesc* MethodDesc = UnrealMono->MonoMethodDescNew(MethodDescStr, false);
-	PrintDebugMessage(MethodDesc, "mono_method_desc_new");
-
-	MonoMethod* Method = UnrealMono->MonoMethodDescSearchInImage(MethodDesc, Image);
-	PrintDebugMessage(Method, "mono_method_desc_search_in_image");
-
-	MonoObject* Result = UnrealMono->MonoRuntimeInvoke(Method, nullptr, nullptr, nullptr);
-	PrintDebugMessage(Result, "mono_runtime_invoke");
-
-	int ResultInt = *(int*)UnrealMono->MonoObjectUnbox(Result);
-
-	UnrealMono->MonoJitCleanup(Domain);
-
-	return ResultInt;
-}
-
 void ASCharacter::ApplyMod()
 {
 	if (!IsModApplied)
 	{
 		IsModApplied = true;
-		int Factor = RetrieveFromDll();
+
+		UnrealMono::Module* UMono = FModuleManager::GetModulePtr<UnrealMono::Module>("UnrealMono");
+
+		FString DllName = "test.dll";
+		FString DllPath = FPaths::ProjectDir() + TEXT("Managed/") + DllName;
+
+		MonoImage* Image = UMono->LoadAssembly(DllPath);
+		MonoMethod* Method = UMono->FindMethod(Image, TEXT("UnrealMonoTest::JumpHeightFactor()"), false);
+		int Factor = *(int*)UMono->InvokeMethod(Method, nullptr, nullptr, nullptr);
+
 		GetCharacterMovement()->JumpZVelocity *= Factor;
 	}
 }

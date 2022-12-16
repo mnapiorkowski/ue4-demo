@@ -17,8 +17,7 @@ public class UnrealMono : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[] 
 		{
 			"Core",
-			"Projects",
-			"MonoRuntime",
+			"Mono",
 		});
 			
 		

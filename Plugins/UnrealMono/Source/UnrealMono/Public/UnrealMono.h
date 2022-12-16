@@ -10,15 +10,22 @@ THIRD_PARTY_INCLUDES_START
 #include "mono/metadata/debug-helpers.h"
 THIRD_PARTY_INCLUDES_END
 
-class UNREALMONO_API FUnrealMonoModule : public IModuleInterface
+namespace UnrealMono
 {
-public:
-	MonoDomain* MonoJitInit(FString file);
-	MonoAssembly* MonoDomainAssemblyOpen(MonoDomain* domain, FString name);
-	MonoImage* MonoAssemblyGetImage(MonoAssembly* assembly);
-	MonoMethodDesc* MonoMethodDescNew(FString name, bool include_namespace);
-	MonoMethod* MonoMethodDescSearchInImage(MonoMethodDesc* method_desc, MonoImage* image);
-	MonoObject* MonoRuntimeInvoke(MonoMethod* method, void* obj, void** params, MonoObject** exc);
-	void* MonoObjectUnbox(MonoObject* object);
-	void MonoJitCleanup(MonoDomain* domain);
-};
+	class UNREALMONO_API Module : public IModuleInterface
+	{
+	private:
+		MonoDomain* Domain;
+
+	protected:
+
+		virtual void StartupModule() override;
+		virtual void ShutdownModule() override;
+
+	public:
+		MonoImage* LoadAssembly(FString Path);
+		MonoMethod* FindMethod(MonoImage* Image, FString MethodDescStr, bool IncludeNamespace);
+		void* InvokeMethod(MonoMethod* Method, void* Object, void** Params, MonoObject** Exception);
+	};
+
+}

@@ -1,44 +1,67 @@
 #include "UnrealMono.h"
 #include "Modules/ModuleManager.h"
 
-MonoDomain* FUnrealMonoModule::MonoJitInit(FString file)
+void UnrealMono::Module::StartupModule()
 {
-	return mono_jit_init(TCHAR_TO_ANSI(*file));
+	mono_config_parse(nullptr);
+	Domain = mono_jit_init("TestDomain");
+	if (!Domain)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UnrealMono failed to initialize Mono runtime."));
+	}
 }
 
-MonoAssembly* FUnrealMonoModule::MonoDomainAssemblyOpen(MonoDomain* domain, FString name)
+void UnrealMono::Module::ShutdownModule()
 {
-	return mono_domain_assembly_open(domain, TCHAR_TO_ANSI(*name));
+	mono_jit_cleanup(Domain);
 }
 
-MonoImage* FUnrealMonoModule::MonoAssemblyGetImage(MonoAssembly* assembly)
+MonoImage* UnrealMono::Module::LoadAssembly(FString Path)
 {
-	return mono_assembly_get_image(assembly);
+	MonoImage* Image = nullptr;
+	MonoAssembly* Assembly = mono_domain_assembly_open(Domain, TCHAR_TO_ANSI(*Path));
+	if (!Assembly)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UnrealMono failed to open %s assembly."), *Path);
+	}
+	else
+	{
+		Image = mono_assembly_get_image(Assembly);
+		if (!Image)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("UnrealMono failed to get the image of assembly."));
+		}
+	}
+	return Image;
 }
 
-MonoMethodDesc* FUnrealMonoModule::MonoMethodDescNew(FString name, bool include_namespace)
+MonoMethod* UnrealMono::Module::FindMethod(MonoImage* Image, FString MethodDescStr, bool IncludeNamespace)
 {
-	return mono_method_desc_new(TCHAR_TO_ANSI(*name), include_namespace);
+	MonoMethod* Method = nullptr;
+	MonoMethodDesc* MethodDesc = mono_method_desc_new(TCHAR_TO_ANSI(*MethodDescStr), IncludeNamespace);
+	if (!MethodDesc)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UnrealMono failed to get %s descriptor."), *MethodDescStr);
+	}
+	else
+	{
+		Method = mono_method_desc_search_in_image(MethodDesc, Image);
+		if (!Method)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("UnrealMono failed to find %s in assembly image."), *MethodDescStr);
+		}
+	}
+	return Method;
 }
 
-MonoMethod* FUnrealMonoModule::MonoMethodDescSearchInImage(MonoMethodDesc* method_desc, MonoImage* image)
+void* UnrealMono::Module::InvokeMethod(MonoMethod* Method, void* Object, void** Params, MonoObject** Exception)
 {
-	return mono_method_desc_search_in_image(method_desc, image);
+	MonoObject* Result = mono_runtime_invoke(Method, Object, Params, Exception);
+	if (!Result)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UnrealMono failed to invoke the method."));
+	}
+	return mono_object_unbox(Result);
 }
 
-MonoObject* FUnrealMonoModule::MonoRuntimeInvoke(MonoMethod* method, void* obj, void** params, MonoObject** exc)
-{
-	return mono_runtime_invoke(method, obj, params, exc);
-}
-
-void* FUnrealMonoModule::MonoObjectUnbox(MonoObject* object)
-{
-	return mono_object_unbox(object);
-}
-
-void FUnrealMonoModule::MonoJitCleanup(MonoDomain* domain)
-{
-	mono_jit_cleanup(domain);
-}
-
-IMPLEMENT_MODULE(FUnrealMonoModule, UnrealMono)
+IMPLEMENT_MODULE(UnrealMono::Module, UnrealMono)
