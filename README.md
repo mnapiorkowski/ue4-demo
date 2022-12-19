@@ -10,11 +10,7 @@ In general, the runtime and its class libraries are licensed under the terms of 
 Check details [here](https://github.com/mono/mono/blob/main/LICENSE).
 
 ## Prerequisites
-Current version works only on Windows. You need to have Mono x64 installed and copy 'lib' directory to Plugins/UnrealMono/Runtime/Win64/ (in fact, just 'lib/mono-2.0-sgen.lib' should be enough).
+Current version works only on Windows. You need to have Mono x64 installed.
 
-## Test
-From the root directory of your game run:
-```
-mcs Test/UnrealMonoTest.cs -target:library -out:Managed/test.dll
-```
-This DLL will be loaded into Mono Runtime after you push Enter while playing the game. Then player character's jump height will be multiplied by the factor returned from the compiled function.
+## Installation
+From the root directory of your game run `install.bat`. It will create necessary directories, copy mono-2.0-sgen.lib and compile tests.

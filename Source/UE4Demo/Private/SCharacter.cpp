@@ -5,7 +5,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
-
 #include "UnrealMono.h"
 
 // Sets default values
@@ -31,6 +30,17 @@ ASCharacter::ASCharacter()
 // Called when the game starts or when spawned
 void ASCharacter::BeginPlay()
 {
+	float* JumpPtr = &(GetCharacterMovement()->JumpZVelocity);
+	UE_LOG(LogTemp, Log, TEXT("JumpZVelocity pointer: %p"), (void*)JumpPtr);
+	UnrealMono::Module* UMono = FModuleManager::GetModulePtr<UnrealMono::Module>("UnrealMono");
+
+	FString DllName = "test.dll";
+	FString DllPath = FPaths::ProjectDir() + TEXT("Managed/") + DllName;
+	MonoImage* Image = UMono->LoadAssembly(DllPath);
+	MonoMethod* SetPtr = UMono->FindMethod(Image, TEXT("UnrealMonoTest:SetPtr(void*)"), false);
+	void* Args[1] = { JumpPtr };
+	UMono->InvokeMethod(SetPtr, nullptr, Args, nullptr);
+
 	Super::BeginPlay();
 }
 
@@ -80,18 +90,22 @@ void ASCharacter::ApplyMod()
 
 		FString DllName = "test.dll";
 		FString DllPath = FPaths::ProjectDir() + TEXT("Managed/") + DllName;
-
 		MonoImage* Image = UMono->LoadAssembly(DllPath);
-		MonoMethod* Method = UMono->FindMethod(Image, TEXT("UnrealMonoTest::JumpHeightFactor()"), false);
-		int Factor = *(int*)UMono->InvokeMethod(Method, nullptr, nullptr, nullptr);
-
-		GetCharacterMovement()->JumpZVelocity *= Factor;
+		MonoMethod* ChangeVal = UMono->FindMethod(Image, TEXT("UnrealMonoTest:ChangeVal()"), false);
+		UpdateMethod = ChangeVal;
 	}
 }
 
 // Called every frame
 void ASCharacter::Tick(float DeltaTime)
 {
+	if (UpdateMethod)
+	{
+		UnrealMono::Module* UMono = FModuleManager::GetModulePtr<UnrealMono::Module>("UnrealMono");
+		UMono->InvokeMethod(UpdateMethod, nullptr, nullptr, nullptr);
+		UE_LOG(LogTemp, Log, TEXT("New jump height: %f"), GetCharacterMovement()->JumpZVelocity);
+	}
+
 	Super::Tick(DeltaTime);
 }
 

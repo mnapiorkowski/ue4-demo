@@ -56,12 +56,13 @@ MonoMethod* UnrealMono::Module::FindMethod(MonoImage* Image, FString MethodDescS
 
 void* UnrealMono::Module::InvokeMethod(MonoMethod* Method, void* Object, void** Params, MonoObject** Exception)
 {
-	MonoObject* Result = mono_runtime_invoke(Method, Object, Params, Exception);
-	if (!Result)
+	void* Result = nullptr;
+	MonoObject* ResultObject = mono_runtime_invoke(Method, Object, Params, Exception);
+	if (ResultObject)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UnrealMono failed to invoke the method."));
+		Result = mono_object_unbox(ResultObject);
 	}
-	return mono_object_unbox(Result);
+	return Result;
 }
 
 IMPLEMENT_MODULE(UnrealMono::Module, UnrealMono)

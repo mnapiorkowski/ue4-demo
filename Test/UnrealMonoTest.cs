@@ -1,7 +1,16 @@
 using System;
 
-public class UnrealMonoTest {
-    public static int JumpHeightFactor() {
-        return 5;
+unsafe public class UnrealMonoTest 
+{
+    private static float* JumpHeightPtr;
+
+    public static void SetPtr(void* Ptr)
+    {
+        JumpHeightPtr = (float*)Ptr;
+    }
+
+    public static void ChangeVal()
+    {
+        (*JumpHeightPtr)++;
     }
 }

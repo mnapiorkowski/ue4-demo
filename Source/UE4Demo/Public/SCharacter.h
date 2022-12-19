@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "UnrealMono.h"
 #include "SCharacter.generated.h"
 
 class USpringArmComponent;
@@ -51,6 +52,8 @@ protected:
 	bool IsModApplied;
 
 	void ApplyMod();
+
+	MonoMethod* UpdateMethod;
 
 public:	
 	// Called every frame
