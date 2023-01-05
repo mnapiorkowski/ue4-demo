@@ -16,9 +16,8 @@ void UnrealMono::Module::ShutdownModule()
 	mono_jit_cleanup(Domain);
 }
 
-MonoImage* UnrealMono::Module::LoadAssembly(FString Path)
+void UnrealMono::Module::LoadAssembly(FString Path)
 {
-	MonoImage* Image = nullptr;
 	MonoAssembly* Assembly = mono_domain_assembly_open(Domain, TCHAR_TO_ANSI(*Path));
 	if (!Assembly)
 	{
@@ -32,12 +31,16 @@ MonoImage* UnrealMono::Module::LoadAssembly(FString Path)
 			UE_LOG(LogTemp, Warning, TEXT("UnrealMono failed to get the image of assembly."));
 		}
 	}
-	return Image;
 }
 
-MonoMethod* UnrealMono::Module::FindMethod(MonoImage* Image, FString MethodDescStr, bool IncludeNamespace)
+MonoMethod* UnrealMono::Module::FindMethod(FString MethodDescStr)
 {
 	MonoMethod* Method = nullptr;
+
+	int32 DotIdx = INDEX_NONE, ColonIdx = INDEX_NONE;
+	MethodDescStr.FindChar(TCHAR(':'), ColonIdx);
+	bool IncludeNamespace = MethodDescStr.FindChar(TCHAR('.'), DotIdx) && DotIdx < ColonIdx;
+
 	MonoMethodDesc* MethodDesc = mono_method_desc_new(TCHAR_TO_ANSI(*MethodDescStr), IncludeNamespace);
 	if (!MethodDesc)
 	{
@@ -54,11 +57,17 @@ MonoMethod* UnrealMono::Module::FindMethod(MonoImage* Image, FString MethodDescS
 	return Method;
 }
 
-void* UnrealMono::Module::InvokeMethod(MonoMethod* Method, void* Object, void** Params, MonoObject** Exception)
+void* UnrealMono::Module::InvokeGetResult(void* Object, MonoMethod* Method, void** Params)
 {
 	void* Result = nullptr;
-	MonoObject* ResultObject = mono_runtime_invoke(Method, Object, Params, Exception);
-	if (ResultObject)
+	MonoObject* Exception = nullptr;
+
+	MonoObject* ResultObject = mono_runtime_invoke(Method, Object, Params, &Exception);
+	if (Exception)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("An unhandled exception was thrown in managed code."));
+	}
+	else if (ResultObject)
 	{
 		Result = mono_object_unbox(ResultObject);
 	}

@@ -1,6 +1,6 @@
 using System;
 
-unsafe public class UnrealMonoTest 
+unsafe public class UnrealMonoTest
 {
     private static float* JumpHeightPtr;
 

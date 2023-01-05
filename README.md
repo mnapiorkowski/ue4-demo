@@ -13,4 +13,4 @@ Check details [here](https://github.com/mono/mono/blob/main/LICENSE).
 Current version works only on Windows. You need to have Mono x64 installed.
 
 ## Installation
-From the root directory of your game run `install.bat`. It will create necessary directories, copy mono-2.0-sgen.lib and compile tests.
+From the root directory of your game run `install.bat`. It will create necessary directories, copy `mono-2.0-sgen.lib` and compile tests.

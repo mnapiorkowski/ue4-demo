@@ -30,16 +30,15 @@ ASCharacter::ASCharacter()
 // Called when the game starts or when spawned
 void ASCharacter::BeginPlay()
 {
-	float* JumpPtr = &(GetCharacterMovement()->JumpZVelocity);
-	UE_LOG(LogTemp, Log, TEXT("JumpZVelocity pointer: %p"), (void*)JumpPtr);
 	UnrealMono::Module* UMono = FModuleManager::GetModulePtr<UnrealMono::Module>("UnrealMono");
-
-	FString DllName = "test.dll";
+	
+	FString DllName = TEXT("test.dll");
 	FString DllPath = FPaths::ProjectDir() + TEXT("Managed/") + DllName;
-	MonoImage* Image = UMono->LoadAssembly(DllPath);
-	MonoMethod* SetPtr = UMono->FindMethod(Image, TEXT("UnrealMonoTest:SetPtr(void*)"), false);
-	void* Args[1] = { JumpPtr };
-	UMono->InvokeMethod(SetPtr, nullptr, Args, nullptr);
+	FString MethodName = TEXT("UnrealMonoTest:SetPtr(void*)");
+	float* JumpPtr = &(GetCharacterMovement()->JumpZVelocity);
+
+	UMono->LoadAssembly(DllPath);
+	UMono->FindInvokeStaticMethod<void>(MethodName, JumpPtr);
 
 	Super::BeginPlay();
 }
@@ -87,11 +86,8 @@ void ASCharacter::ApplyMod()
 		IsModApplied = true;
 
 		UnrealMono::Module* UMono = FModuleManager::GetModulePtr<UnrealMono::Module>("UnrealMono");
-
-		FString DllName = "test.dll";
-		FString DllPath = FPaths::ProjectDir() + TEXT("Managed/") + DllName;
-		MonoImage* Image = UMono->LoadAssembly(DllPath);
-		MonoMethod* ChangeVal = UMono->FindMethod(Image, TEXT("UnrealMonoTest:ChangeVal()"), false);
+		FString MethodName = TEXT("UnrealMonoTest:ChangeVal()");
+		MonoMethod* ChangeVal = UMono->FindMethod(MethodName);
 		UpdateMethod = ChangeVal;
 	}
 }
@@ -102,7 +98,7 @@ void ASCharacter::Tick(float DeltaTime)
 	if (UpdateMethod)
 	{
 		UnrealMono::Module* UMono = FModuleManager::GetModulePtr<UnrealMono::Module>("UnrealMono");
-		UMono->InvokeMethod(UpdateMethod, nullptr, nullptr, nullptr);
+		UMono->InvokeStaticMethod<void>(UpdateMethod);
 		UE_LOG(LogTemp, Log, TEXT("New jump height: %f"), GetCharacterMovement()->JumpZVelocity);
 	}
 

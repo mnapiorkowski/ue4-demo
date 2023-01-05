@@ -17,15 +17,57 @@ namespace UnrealMono
 	private:
 		MonoDomain* Domain;
 
-	protected:
+		MonoImage* Image;
 
+		void* InvokeGetResult(void* Object, MonoMethod* Method, void** Params);
+		
+	protected:
 		virtual void StartupModule() override;
+
 		virtual void ShutdownModule() override;
 
 	public:
-		MonoImage* LoadAssembly(FString Path);
-		MonoMethod* FindMethod(MonoImage* Image, FString MethodDescStr, bool IncludeNamespace);
-		void* InvokeMethod(MonoMethod* Method, void* Object, void** Params, MonoObject** Exception);
+		void LoadAssembly(FString Path);
+
+		MonoMethod* FindMethod(FString MethodDescStr);
+
+		template <typename T, typename... ArgsT> 
+		T* InvokeMethod(void* Object, MonoMethod* Method, ArgsT*... Args);
+		
+		template <typename T, typename... ArgsT> 
+		T* InvokeStaticMethod(MonoMethod* Method, ArgsT*... Args);
+
+		template <typename T, typename... ArgsT> 
+		T* FindInvokeMethod(void* Object, FString MethodDescStr, ArgsT*... Args);
+
+		template <typename T, typename... ArgsT> 
+		T* FindInvokeStaticMethod(FString MethodDescStr, ArgsT*... Args);
 	};
 
+	template <typename T, typename... ArgsT>
+	T* Module::InvokeMethod(void* Object, MonoMethod* Method, ArgsT*... Args)
+	{
+		TArray<void*> Params = { (void*)Args... };
+		return (T*)Module::InvokeGetResult(Object, Method, Params.GetData());
+	}
+
+	template <typename T, typename... ArgsT>
+	T* Module::InvokeStaticMethod(MonoMethod* Method, ArgsT*... Args)
+	{
+		return Module::InvokeMethod<T>(nullptr, Method, Args...);
+	}
+
+	template <typename T, typename... ArgsT>
+	T* Module::FindInvokeMethod(void* Object, FString MethodDescStr, ArgsT*... Args)
+	{
+		MonoMethod* Method = Module::FindMethod(MethodDescStr);
+		return Module::InvokeMethod<T>(Object, Method, Args...);
+	}
+
+	template <typename T, typename... ArgsT>
+	T* Module::FindInvokeStaticMethod(FString MethodDescStr, ArgsT*... Args)
+	{
+		MonoMethod* Method = Module::FindMethod(MethodDescStr);
+		return Module::InvokeMethod<T>(nullptr, Method, Args...);
+	}
 }
